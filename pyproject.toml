@@ -12,6 +12,7 @@ pandas = "^2.1.4"
 jupyterlab = "^4.0.9"
 python-dotenv = "^1.0.0"
 linkedin-api = "^2.0.3"
+pydantic = "^2.5.2"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.12.0"
