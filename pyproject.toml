@@ -135,7 +135,9 @@ ignore = [
     # Allow mixedCase to match LI api
     "N815",
     # Allow use of non-self for first argument in methods
-    "N805"
+    "N805",
+    # Allow use of Optional
+    "UP007"
 ]
 unfixable = [
     # Don't touch unused imports
