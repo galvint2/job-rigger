@@ -1,23 +1,165 @@
-[tool.poetry]
-name = "job-rigger"
-version = "0.1.0"
-description = "tools for job hunting"
-authors = ["Thomas Galvin"]
-license = "MIT"
-readme = "README.md"
-
-[tool.poetry.dependencies]
-python = "^3.12"
-pandas = "^2.1.4"
-jupyterlab = "^4.0.9"
-python-dotenv = "^1.0.0"
-linkedin-api = "^2.0.3"
-pydantic = "^2.5.2"
-
-[tool.poetry.group.dev.dependencies]
-black = "^23.12.0"
-isort = "^5.13.2"
-
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "job-rigger"
+dynamic = ["version"]
+description = ''
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+keywords = []
+authors = [
+    { name = "Thomas Galvin", email = "galvint2@gmail.com" },
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+    "datamodel-code-generator[http]",
+    "jupyterlab",
+    "pydantic",
+    "pandas",
+    "python-dotenv",
+    "linkedin-api",
+    "black>=23.1.0",
+    "mypy>=1.0.0",
+    "ruff>=0.0.243",
+]
+
+[project.urls]
+Documentation = "https://github.com/galvint2/job-rigger#readme"
+Issues = "https://github.com/galvint2/job-rigger/issues"
+Source = "https://github.com/galvint2/job-rigger"
+
+[tool.hatch.version]
+path = "src/job_rigger/__about__.py"
+
+[tool.hatch.envs.default]
+dependencies = [
+    "pytest",
+]
+[tool.hatch.envs.default.scripts]
+test = "pytest {args:tests}"
+typing = "mypy --install-types --non-interactive {args:src/job_rigger}"
+style = [
+    "ruff {args:.}",
+    "black --check --diff {args:.}",
+]
+fmt = [
+    "black {args:.}",
+    "ruff --fix {args:.}",
+    "style",
+]
+all = [
+    "style",
+    "typing",
+]
+
+[[tool.hatch.envs.all.matrix]]
+python = ["3.11", "3.12"]
+
+[tool.black]
+target-version = ["py312"]
+line-length = 120
+skip-string-normalization = true
+
+[tool.mypy]
+python_version = "3.12"
+files = ['*.py', '**/*.py']
+exclude = ["tests"]
+plugins = ["pydantic.mypy"]
+no_site_packages = true
+follow_imports = "skip"
+ignore_missing_imports = true
+strict_optional = false
+warn_return_any = false
+warn_unused_ignores = true
+show_error_codes = true
+no_implicit_optional = true
+disallow_untyped_defs = true
+disallow_any_generics = true
+check_untyped_defs = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+warn_untyped_fields = true
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+select = [
+    "A",
+    "ARG",
+    "B",
+    "C",
+    "DTZ",
+    "E",
+    "EM",
+    "F",
+    "FBT",
+    "I",
+    "ICN",
+    "ISC",
+    "N",
+    "PLC",
+    "PLE",
+    "PLR",
+    "PLW",
+    "Q",
+    "RUF",
+    "S",
+    "T",
+    "TID",
+    "UP",
+    "W",
+    "YTT",
+]
+ignore = [
+    # Allow non-abstract empty methods in abstract base classes
+    "B027",
+    # Allow boolean positional values in function calls, like `dict.get(... True)`
+    "FBT003",
+    # Ignore checks for possible passwords
+    "S105", "S106", "S107",
+    # Ignore complexity
+    "C901", "PLR0911", "PLR0912", "PLR0913", "PLR0915",
+    # Allow mixedCase to match LI api
+    "N815",
+    # Allow use of non-self for first argument in methods
+    "N805"
+]
+unfixable = [
+    # Don't touch unused imports
+    "F401",
+]
+
+[tool.ruff.isort]
+known-first-party = ["job_rigger"]
+
+[tool.ruff.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.per-file-ignores]
+"tests/**/*" = ["PLR2004", "S101", "TID252"]
+
+[tool.datamodel-codegen]
+target-python-version = "3.12"
+output-model-type = "pydantic_v2.BaseModel"
+base-class = "pydantic_v2.BaseModel"
+use-title-as-name = true
+snake-case-field = true
+remove-special-field-name-prefix = true
+disable-appending-item-suffix = true
+allow-population-by-field-name = true
+collapse-root-models = true
+capitalise-enum-members = true
+
