@@ -21,7 +21,7 @@ class JobSearchResult(BaseModel):
         return extract_entity_id(v)
 
 
-class JobSearchResults(BaseModel):
+class JobSearchResultList(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
     )
