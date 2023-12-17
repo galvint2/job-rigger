@@ -25,6 +25,8 @@ dependencies = [
     "datamodel-code-generator[http]",
     "jupyterlab",
     "pydantic",
+    "pydantic-settings",
+    "pydantic-extra-types",
     "pandas",
     "python-dotenv",
     "linkedin-api",
@@ -47,7 +49,6 @@ dependencies = [
 ]
 [tool.hatch.envs.default.scripts]
 test = "pytest {args:tests}"
-typing = "mypy --install-types --non-interactive {args:src/job_rigger}"
 style = [
     "ruff {args:.}",
     "black --check --diff {args:.}",
@@ -59,7 +60,6 @@ fmt = [
 ]
 all = [
     "style",
-    "typing",
 ]
 
 [[tool.hatch.envs.all.matrix]]

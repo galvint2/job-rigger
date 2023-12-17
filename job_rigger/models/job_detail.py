@@ -1,22 +1,19 @@
-from typing import Any, Optional
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-
-from job_rigger.utils import extract_entity_id
+from job_rigger.utils import extract_entity_id, timestamp_to_date
 
 
 class CompanyResolutionResult(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
     )
-    entity_urn: str = Field(..., alias="entityUrn")
+    entity_urn: str = Field(..., alias="companyEntityUrn")
     name: str
-    recipe_type: str = Field(..., alias="$recipeType")
     universal_name: str = Field(..., alias="universalName")
     url: str
 
 
-class ComLinkedinVoyagerDecoJobsWebSharedWebCompactJobPostingCompany(BaseModel):
+class JobPostingCompany(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
     )
@@ -29,35 +26,7 @@ class CompanyDetails(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
     )
-    com_linkedin_voyager_deco_jobs_web_shared_web_compact_job_posting_company: ComLinkedinVoyagerDecoJobsWebSharedWebCompactJobPostingCompany = Field(
-        ..., alias="com.linkedin.voyager.deco.jobs.web.shared.WebCompactJobPostingCompany"
-    )
-
-
-class ComLinkedinPemberlyTextList(BaseModel):
-    model_config = ConfigDict(
-        populate_by_name=True,
-    )
-    ordered: bool
-
-
-class ListModel(BaseModel):
-    model_config = ConfigDict(
-        populate_by_name=True,
-    )
-    ordered: bool
-
-
-class AttributeKindUnion(BaseModel):
-    model_config = ConfigDict(
-        populate_by_name=True,
-    )
-    bold: Optional[dict[str, Any]] = None
-    paragraph: Optional[dict[str, Any]] = None
-    line_break: Optional[dict[str, Any]] = Field(None, alias="lineBreak")
-    list_item: Optional[dict[str, Any]] = Field(None, alias="listItem")
-    list: Optional[ListModel] = None
-    italic: Optional[dict[str, Any]] = None
+    job_posting_company: JobPostingCompany = Field(..., alias="jobPostingCompany")
 
 
 class Description(BaseModel):
@@ -67,7 +36,7 @@ class Description(BaseModel):
     text: str
 
 
-class ComLinkedinVoyagerJobsOffsiteApply(BaseModel):
+class OffsiteApply(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
     )
@@ -80,51 +49,57 @@ class ApplyMethod(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
     )
-    com_linkedin_voyager_jobs_offsite_apply: ComLinkedinVoyagerJobsOffsiteApply = Field(
-        ..., alias="com.linkedin.voyager.jobs.OffsiteApply"
-    )
-
-
-class UrnLiFsWorkplaceType3(BaseModel):
-    model_config = ConfigDict(
-        populate_by_name=True,
-    )
-    localized_name: str = Field(..., alias="localizedName")
-    recipe_type: str = Field(..., alias="$recipeType")
-    entity_urn: str = Field(..., alias="entityUrn")
-
-
-class WorkplaceTypesResolutionResults(BaseModel):
-    model_config = ConfigDict(
-        populate_by_name=True,
-    )
-    urn_li_fs_workplace_type_3: UrnLiFsWorkplaceType3 = Field(..., alias="urn:li:fs_workplaceType:3")
+    offsite_apply: OffsiteApply = Field(..., alias="com.linkedin.voyager.jobs.OffsiteApply")
 
 
 class JobDetail(BaseModel):
-    model_config = ConfigDict(
-        populate_by_name=True,
-    )
-    company_details: CompanyDetails = Field(..., alias="companyDetails")
-    job_state: str = Field(..., alias="jobState")
-    description: Description
+    model_config = ConfigDict(populate_by_name=True, extra="ignore")
     title: str
-    entity_urn: str = Field(..., alias="entityUrn")
+    description: Description
     work_remote_allowed: bool = Field(..., alias="workRemoteAllowed")
-    apply_method: ApplyMethod = Field(..., alias="applyMethod")
-    talent_hub_job: bool = Field(..., alias="talentHubJob")
     location: str = Field(..., alias="formattedLocation")
-    workplace_types: list[str] = Field(..., alias="workplaceTypes")
+    job_state: str = Field(..., alias="jobState")
+    entity_urn: str = Field(..., alias="entityUrn")
+    company_entity_urn: str = Field(..., alias="companyEntityUrn")
+    company_name: str = Field(..., alias="name")
+    company_universal_name: str = Field(..., alias="universalName")
+    company_url: str = Field(..., alias="url")
+    company_apply_url: ApplyMethod = Field(..., alias="applyMethod")
+    talent_hub_job: bool = Field(..., alias="talentHubJob")
     listed_at: int = Field(..., alias="listedAt")
-    job_posting_id: int = Field(..., alias="jobPostingId")
-    workplace_types_resolution_results: WorkplaceTypesResolutionResults = Field(
-        ..., alias="workplaceTypesResolutionResults"
-    )
 
-    # @field_validator("job_posting_id")
-    # def extract_job_posting_id(cls, v: str) -> str:
-    #     return extract_entity_id(v)
+    @field_validator("company_apply_url")
+    @classmethod
+    def unnest_apply_method(cls, v: ApplyMethod) -> str:
+        return v.offsite_apply.company_apply_url
+
+    @field_validator("description")
+    @classmethod
+    def unnest_description(cls, v: Description) -> str:
+        return v.text
+
+    @field_validator("listed_at")
+    @classmethod
+    def convert_timestamp(cls, v: int) -> str:
+        return timestamp_to_date(v)
 
     @field_validator("entity_urn")
-    def extract_entity_urn(cls, v: str) -> str:
+    @classmethod
+    def extract_id_from_urn(cls, v: str) -> str:
         return extract_entity_id(v)
+
+    @model_validator(mode="before")
+    @classmethod
+    def extract_company_resolution_result(cls, values):
+        company_details = values.get("companyDetails")
+        job_posting_company = company_details.get(
+            "com.linkedin.voyager.deco.jobs.web.shared.WebCompactJobPostingCompany"
+        )
+        company_resolution_result = job_posting_company.get("companyResolutionResult")
+        values["name"] = company_resolution_result.get("name", "")
+        values["company_universal_name"] = company_resolution_result.get("universalName", "")
+        values["url"] = company_resolution_result.get("url", "")
+        company_entity_urn = company_resolution_result.get("entityUrn", "")
+        values["company_entity_urn"] = extract_entity_id(company_entity_urn)
+
+        return values

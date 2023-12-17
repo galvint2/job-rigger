@@ -14,6 +14,7 @@ class JobSearchResult(BaseModel):
     entity_urn: str = Field(..., alias="entityUrn")
 
     @field_validator("entity_urn")
+    @classmethod
     def extract_id_from_urn(cls, v: str) -> str:
         return extract_entity_id(v)
 
